@@ -70,7 +70,7 @@ python3 zectrix_friday_push.py                     # 渲染并推送到墨水屏
 ## 三、渲染与排版经验（改样式时务必遵守）
 
 - **原生 400×300、1:1 渲染**，不要再放大后缩小；二值化阈值 `THRESHOLD=128`，`dither=false` 推送（硬阈值，文字最锐利）
-- **字体**：自动探测顺序为 `$ZECTRIX_FONT` → `~/Library/Fonts/Zfull.ttf`（点阵，8-24px 像素级锐利，最推荐）→ PingFang → 黑体 → Noto CJK。小字号中文想要锯齿感就用点阵字体
+- **字体**：默认使用仓库自带的 `assets/fonts/Zfull.ttf` 点阵字体（8-24px 像素级锐利，最推荐墨水屏，clone 即生效，无需另装）；可用 `$ZECTRIX_FONT=/path/to/xxx.ttf` 覆盖，再回退到系统 PingFang / 黑体 / Noto CJK
 - **图标**：`draw_icon()` 用两遍绘制（先描边色外扩、再填背景色）得到无内线的粗轮廓，云体还能自然遮挡背后的太阳；▲▼ 等多字节符号在点阵字体里小字号会缺字形，一律用代码画
 - **文字一律默认字重**，不加粗不描边（加粗在 1-bit 屏上会糊成一团）
 - **右栏图标+温度整体居中**：先 `d.textlength()` 量温度实际宽度，再以右栏中线为基准算组合起点，晴天图标光芒外扩，占位宽度要单独加宽
@@ -88,6 +88,7 @@ python3 zectrix_friday_push.py                     # 渲染并推送到墨水屏
 | `scripts/zectrix_friday_push.py` | 渲染 + 推送主脚本 |
 | `scripts/dev_render_sample.py` | 生成文档示例图（指定星期/时段/天气，不推送） |
 | `scripts/friday_phrases.json` | 9×65 条文案池，可直接编辑扩充 |
+| `assets/fonts/Zfull.ttf` | 自带点阵字体（默认渲染字体，随仓库分发） |
 | `assets/preview.png` | 效果预览图 |
 | `assets/sample-friday.png` | 周五傍晚示例（黑底反白 + 退朝印章） |
 
