@@ -1,0 +1,9 @@
+__pycache__/
+.DS_Store
+*.pyc
+
+# 配置与状态一律不入库(可能含 API Key)
+config.json
+state.json
+*.token
+.env
