@@ -20,6 +20,7 @@ import urllib.request, urllib.error
 from PIL import Image, ImageDraw, ImageFont
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FONT_DIR = os.path.join(SKILL_DIR, "assets", "fonts")
 CONFIG_DIR = os.environ.get("ZECTRIX_FRIDAY_CONFIG_DIR",
                             os.path.expanduser("~/.config/zectrix-friday-weather"))
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
@@ -27,9 +28,12 @@ STATE_FILE = os.path.join(CONFIG_DIR, "state.json")
 DATA_FILE = os.path.join(SKILL_DIR, "scripts", "friday_phrases.json")
 PREVIEW = "/tmp/zectrix_friday_screen.png"
 
-# ---------- 字体探测: 优先点阵字体, 逐级回退 ----------
+# ---------- 字体探测: 默认仓库自带点阵字体, 可 env 覆盖, 逐级回退 ----------
+# 默认使用随仓库分发的 assets/fonts/Zfull.ttf 点阵字体（墨水屏像素级锐利，无需另装）。
+# 想换字体时设置环境变量 ZECTRIX_FONT=/path/to/xxx.ttf 即可覆盖。
 FONT_CANDIDATES = [
     os.environ.get("ZECTRIX_FONT", ""),
+    os.path.join(FONT_DIR, "Zfull.ttf"),
     os.path.expanduser("~/Library/Fonts/Zfull.ttf"),
     "/System/Library/Fonts/PingFang.ttc",
     "/System/Library/Fonts/STHeiti Medium.ttc",
