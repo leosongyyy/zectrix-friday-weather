@@ -15,7 +15,7 @@
 
 ```
 ┌──────────────────────────────────────────────┐
-│ 今天是周五吗？                      成都·成华区 │
+│ 今天是周五吗？                    示例市·示范区 │
 ├────────────────────────┬─────────────────────┤
 │  休息。                 │   ☀      33°        │
 │                        │      晴  UV8 很强    │
@@ -124,6 +124,7 @@ python3 zectrix_friday_push.py                     # 渲染并推送到墨水屏
 | `scripts/zectrix_friday_push.py` | 渲染 + 推送主脚本 |
 | `scripts/dev_render_sample.py` | 生成文档示例图（可指定星期/时段/天气，不推送不依赖真实天气） |
 | `scripts/friday_phrases.json` | 9 × 65 条文案池，可直接编辑扩充 |
+| `assets/fonts/Zfull.ttf` | 自带点阵字体（默认渲染字体，随仓库分发，无需另行安装） |
 | `SKILL.md` | Agent Skills 格式说明，作为技能安装时读取 |
 | `assets/preview.png` | 效果预览图 |
 
@@ -134,7 +135,7 @@ python3 zectrix_friday_push.py                     # 渲染并推送到墨水屏
 ## 改样式时请注意（踩过的坑）
 
 - **原生 400×300、1:1 渲染**，不要再放大后缩小；二值化阈值 `THRESHOLD=128`，推送时 `dither=false`（硬阈值，文字最锐利）
-- **字体**自动探测顺序：`$ZECTRIX_FONT` → `~/Library/Fonts/Zfull.ttf`（点阵，小字号像素级锐利，最推荐）→ PingFang → 黑体 → Noto CJK
+- **字体**：默认使用仓库自带的 `assets/fonts/Zfull.ttf` 点阵字体（小字号像素级锐利，最推荐墨水屏），clone 下来即可用，无需另行安装；想换字体设 `$ZECTRIX_FONT=/path/to/xxx.ttf` 即可覆盖，再回退到系统 PingFang / 黑体 / Noto CJK
 - **图标**用两遍绘制（先描边色外扩、再填背景色）得到无内线的粗轮廓，云体还能自然遮挡背后的太阳
 - ▲▼ 等符号在点阵字体小字号会缺字形，一律用代码画
 - **文字不加粗不描边**，1-bit 屏上加粗会糊成一团
