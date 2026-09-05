@@ -6,6 +6,11 @@
 
 ![效果预览](assets/preview.png)
 
+周五傍晚（16:00 后）会切换成黑底反白，并在右上角盖上「退朝」印章：
+
+![周五傍晚示例](assets/sample-friday.png)
+*周五 18:30 · 黑底反白 + 退朝印章 + 多云图标 + 紫外线提示*
+
 ## 屏上都有什么
 
 ```
@@ -117,6 +122,7 @@ python3 zectrix_friday_push.py                     # 渲染并推送到墨水屏
 |------|------|
 | `scripts/init.py` | 初始化向导：收集 Key/设备/地区、地理编码、校验并写配置 |
 | `scripts/zectrix_friday_push.py` | 渲染 + 推送主脚本 |
+| `scripts/dev_render_sample.py` | 生成文档示例图（可指定星期/时段/天气，不推送不依赖真实天气） |
 | `scripts/friday_phrases.json` | 9 × 65 条文案池，可直接编辑扩充 |
 | `SKILL.md` | Agent Skills 格式说明，作为技能安装时读取 |
 | `assets/preview.png` | 效果预览图 |
