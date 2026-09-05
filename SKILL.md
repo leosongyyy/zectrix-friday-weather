@@ -86,7 +86,9 @@ python3 zectrix_friday_push.py                     # 渲染并推送到墨水屏
 |------|------|
 | `scripts/init.py` | 初始化向导：收集 Key/设备/地区，地理编码，写配置 |
 | `scripts/zectrix_friday_push.py` | 渲染 + 推送主脚本 |
+| `scripts/dev_render_sample.py` | 生成文档示例图（指定星期/时段/天气，不推送） |
 | `scripts/friday_phrases.json` | 9×65 条文案池，可直接编辑扩充 |
 | `assets/preview.png` | 效果预览图 |
+| `assets/sample-friday.png` | 周五傍晚示例（黑底反白 + 退朝印章） |
 
 天气数据来自 [Open-Meteo](https://open-meteo.com)（免费、无需注册 Key），紫外线取当日 `uv_index_max`。
