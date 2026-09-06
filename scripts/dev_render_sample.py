@@ -22,6 +22,7 @@ ap.add_argument("--code", type=int, default=2, help="WMO 天气码, 2=多云 0=�
 ap.add_argument("--temp", type=int, default=26)
 ap.add_argument("--uv", type=int, default=6)
 ap.add_argument("--date", default="2026-09-11", help="示例日期 YYYY-MM-DD")
+ap.add_argument("--label", default="示例市·示范区", help="示例图右上角地名(脱敏用)")
 
 args = ap.parse_args()
 os.environ["ZECTRIX_NO_PUSH"] = "1"
@@ -41,6 +42,7 @@ src = src.replace("now = datetime.datetime.now()", "now = %s" % fake_now)
 src = src.replace("wx = fetch_weather()", "wx = %s" % fake_wx)
 src = src.replace('PREVIEW = "/tmp/zectrix_friday_screen.png"',
                   'PREVIEW = %r' % os.path.abspath(args.out))
+src = src.replace('LABEL = LOC.get("label", "")', 'LABEL = %r' % args.label)
 
 try:
     exec(compile(src, "sample_render", "exec"),
