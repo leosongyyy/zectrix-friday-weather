@@ -13,11 +13,12 @@ Zectrix 墨水屏 —— 「今天是周五吗？」+ 本地天气（单页趣�
   python3 zectrix_friday_push.py          # 渲染并推送
   ZECTRIX_NO_PUSH=1 python3 zectrix_friday_push.py   # 只渲染不推送
 
-依赖: pillow
+依赖: pillow, pymupdf (PyMuPDF, 用于渲染 QWeather 矢量天气 SVG)
 """
 import sys, os, json, uuid, random, datetime, subprocess
 import urllib.request, urllib.error
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+import pymupdf as fitz
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONT_DIR = os.path.join(SKILL_DIR, "assets", "fonts")
@@ -43,6 +44,25 @@ FONT_CANDIDATES = [
     "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
 ]
 FONT_PATH = next((p for p in FONT_CANDIDATES if p and os.path.exists(p)), None)
+
+# ---------- QWeather 矢量天气图标 (SVG, CC BY 4.0) ----------
+ICONS_DIR = os.path.join(SKILL_DIR, "assets", "icons")
+# WMO weathercode → QWeather icon 文件名 (优先 -fill 实心版, 墨水屏二值化更清晰)
+WMO2QW = {
+    0: "100-fill", 1: "100-fill",
+    2: "101-fill",
+    3: "104-fill",
+    45: "501", 48: "501",
+    51: "305", 53: "305", 55: "305",
+    56: "309", 57: "309",
+    61: "306", 63: "307", 65: "308",
+    66: "309", 67: "309",
+    71: "400", 73: "401", 75: "402",
+    77: "404",
+    80: "300", 81: "301", 82: "310",
+    85: "400", 86: "401",
+    95: "302", 96: "303", 99: "304",
+}
 
 # ---------- 配置 ----------
 def load_config():
@@ -148,6 +168,7 @@ def F(sz):
 img = Image.new("L", (IW, IH), 255)
 d = ImageDraw.Draw(img)
 M = 14
+THRESHOLD = 128  # 二值化阈值(墨水屏)
 
 now = datetime.datetime.now()
 pool, answer, invert, stamp = period(now)
@@ -184,9 +205,9 @@ d.text((tx, 70), answer, font=f_ans, fill=tcol, anchor="lm")
 d.text((tx, 112), phrase["line1"], font=f_line, fill=tcol, anchor="lm")
 d.text((tx, 138), phrase["line2"], font=f_line, fill=tcol, anchor="lm")
 
-# 右栏: 当天天气
-def draw_icon(cx, cy, s, code, col):
-    """e-ink 天气站风格: 粗描边蓬云 + 云后探日, 以(cx,cy)为中心"""
+# 右栏: 当天天气图标(优先 QWeather 矢量 SVG, fallback 手绘)
+def _draw_icon_fallback(cx, cy, s, code, col):
+    """手绘 fallback: e-ink 天气站风格粗描边"""
     lw = 4 if s >= 40 else 2
     bg = 255 - col
 
@@ -200,7 +221,6 @@ def draw_icon(cx, cy, s, code, col):
             d.line([(x1, y1), (x2, y2)], fill=col, width=lw)
 
     def cloud(dx, dy, w):
-        # 两遍绘制(先外扩描边色再填背景色): 得到无内线的粗轮廓, 并遮挡云后太阳
         puffs = [
             [dx - 0.50 * w, dy - 0.16 * w, dx - 0.02 * w, dy + 0.26 * w],
             [dx - 0.30 * w, dy - 0.40 * w, dx + 0.20 * w, dy + 0.24 * w],
@@ -219,24 +239,51 @@ def draw_icon(cx, cy, s, code, col):
         cloud(cx + 0.06 * s, cy + 0.08 * s, s * 0.80)
     else:
         cloud(cx, cy - 0.05 * s, s * 0.88)
-        if code in (95, 96, 99):      # 雷雨
+        if code in (95, 96, 99):
             k = s * 0.011
             bolt = [(6, 22), (-8, 38), (0, 38), (-10, 52), (10, 34), (2, 34), (12, 22)]
             d.polygon([(cx + px * k, cy + py * k) for px, py in bolt], fill=col)
-        elif code in RAIN:            # 雨
+        elif code in RAIN:
             for rx in (-0.2, 0.0, 0.2):
                 x = cx + s * rx
                 d.line([(x, cy + s * 0.32), (x - s * 0.05, cy + s * 0.44)], fill=col, width=lw)
-        elif code in SNOW:            # 雪
+        elif code in SNOW:
             sr = 3 if s >= 40 else 2
             for rx, ry in ((-0.2, 0.38), (0.02, 0.44), (0.22, 0.36)):
                 x, y = cx + s * rx, cy + s * ry
                 d.ellipse([x - sr, y - sr, x + sr, y + sr], fill=col)
-        elif code in (45, 48):        # 雾
+        elif code in (45, 48):
             for i, ry in enumerate((0.34, 0.44)):
                 off = s * 0.04 if i else 0
                 d.line([(cx - s * 0.26 + off, cy + s * ry),
                         (cx + s * 0.26 - off, cy + s * ry)], fill=col, width=lw)
+
+def draw_icon(cx, cy, s, code, col):
+    """用 QWeather 矢量 SVG 渲染天气图标(替代手绘), 以(cx,cy)为中心粘贴到画布"""
+    name = WMO2QW.get(code)
+    if not name:
+        _draw_icon_fallback(cx, cy, s, code, col)
+        return
+    svg_path = os.path.join(ICONS_DIR, "%s.svg" % name)
+    if not os.path.exists(svg_path):
+        _draw_icon_fallback(cx, cy, s, code, col)
+        return
+    try:
+        scale = max(s / 16.0, 3.0)
+        svg = open(svg_path, encoding='utf-8').read()
+        doc = fitz.open(stream=svg.encode('utf-8'), filetype='svg')
+        pix = doc[0].get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
+        doc.close()
+        im = Image.frombytes("RGB", [pix.width, pix.height], pix.samples).convert('L')
+        # 二值化(黑图标白底 / 白图标黑底)
+        im = im.point(lambda p: 0 if p < THRESHOLD else 255) if col == 0 \
+             else im.point(lambda p: 255 if p < THRESHOLD else 0)
+        x = int(cx - im.width / 2)
+        y = int(cy - im.height / 2)
+        img.paste(im, (x, y))
+    except Exception as e:
+        print("WARN: SVG icon render failed (%s), fallback" % e)
+        _draw_icon_fallback(cx, cy, s, code, col)
 
 uv = None
 if wx and "current_weather" in wx:
@@ -345,7 +392,6 @@ if tip:
 d.text((M, 282), "%d年%d月%d日" % (now.year, now.month, now.day), font=f_meta, fill=0, anchor="lm")
 d.text((IW - M, 282), WD_CN[now.weekday()], font=f_meta, fill=0, anchor="rm")
 
-THRESHOLD = 128  # 二值化阈值(墨水屏偏粗更清晰)
 final = img.point(lambda p: 0 if p < THRESHOLD else 255).convert("RGB")
 final.save(PREVIEW)
 print("saved %s | 池=%s 开场=%s 文案=%s/%s | 天气=%s | 字体=%s" %
