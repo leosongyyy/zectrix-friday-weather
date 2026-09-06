@@ -44,6 +44,8 @@ FONT_CANDIDATES = [
     "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
 ]
 FONT_PATH = next((p for p in FONT_CANDIDATES if p and os.path.exists(p)), None)
+# 数字字体: DIN Condensed 风格(Oswald Bold, OFL 许可), 用于温度/ HI/LO 等纯数字文本
+NUM_FONT_PATH = os.path.join(FONT_DIR, "Oswald.ttf")
 
 # ---------- QWeather 矢量天气图标 (SVG, CC BY 4.0) ----------
 ICONS_DIR = os.path.join(SKILL_DIR, "assets", "icons")
@@ -164,6 +166,17 @@ def F(sz):
     if FONT_PATH:
         return ImageFont.truetype(FONT_PATH, sz)
     return ImageFont.load_default()
+
+def FN(sz):
+    """数字字体(DIN Condensed 风格), 纯数字/度数文本专用; 缺字体时回退中文主字体"""
+    if os.path.exists(NUM_FONT_PATH):
+        f = ImageFont.truetype(NUM_FONT_PATH, sz)
+        try:
+            f.set_variation_by_name("Bold")
+        except Exception:
+            pass
+        return f
+    return F(sz)
 
 img = Image.new("L", (IW, IH), 255)
 d = ImageDraw.Draw(img)
@@ -304,11 +317,11 @@ if wx and "current_weather" in wx:
     temp_str = "%d°" % cur_t
     tsz = 48
     avail = fx1 - 10 - (div_x + 10) - icon_w - gap
-    while tsz > 26 and d.textlength(temp_str, font=F(tsz)) > avail:
+    while tsz > 26 and d.textlength(temp_str, font=FN(tsz)) > avail:
         tsz -= 4
-    tw = d.textlength(temp_str, font=F(tsz))
+    tw = d.textlength(temp_str, font=FN(tsz))
     sx0 = cx2 - (icon_w + gap + tw) / 2
-    d.text((sx0 + icon_w + gap, 90), temp_str, font=F(tsz), fill=tcol, anchor="lm")
+    d.text((sx0 + icon_w + gap, 90), temp_str, font=FN(tsz), fill=tcol, anchor="lm")
     draw_icon(sx0 + icon_w / 2, 90, 54, cur_c, tcol)
 
     # 状况 + 紫外线等级
@@ -323,7 +336,7 @@ if wx and "current_weather" in wx:
     if uv is not None:
         cond_txt = "%s  UV%d %s" % (cond_txt, uv, uv_level(uv))
     d.text((cx2, 132), cond_txt, font=f_cond, fill=tcol, anchor="mm")
-    d.text((cx2, 152), "HI %d°  LO %d°" % (tmax[0], tmin[0]), font=f_hilo, fill=tcol, anchor="mm")
+    d.text((cx2, 152), "HI %d°  LO %d°" % (tmax[0], tmin[0]), font=FN(14), fill=tcol, anchor="mm")
 else:
     cx2 = (div_x + fx1) / 2
     d.text((cx2, 100), "天气", font=f_cond, fill=tcol, anchor="mm")
@@ -352,7 +365,7 @@ if tmax is not None:
         d.rectangle([bx0, by0, bx0 + cw_box, by1], outline=0, width=2)
         bcx = bx0 + cw_box / 2
         d.text((bcx, by0 + 15), labels[i], font=f_cell_d, fill=0, anchor="mm")
-        d.text((bcx, by0 + 40), "%d° / %d°" % (tmax[i], tmin[i]), font=f_cell_t, fill=0, anchor="mm")
+        d.text((bcx, by0 + 40), "%d° / %d°" % (tmax[i], tmin[i]), font=FN(15), fill=0, anchor="mm")
 
 # 提示条: 按实际天气给出行/穿搭建议(黑底白字)
 tip = None
